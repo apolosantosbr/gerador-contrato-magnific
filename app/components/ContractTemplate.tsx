@@ -1,5 +1,11 @@
 "use client";
 
+export interface ChoppItem {
+  sabor: string;
+  quantidade: string;
+  valor: string;
+}
+
 export interface ContractData {
   nomeCompleto: string;
   nacionalidade: string;
@@ -13,6 +19,8 @@ export interface ContractData {
   horarioInicio: string;
   valor: string;
   dataContrato: string;
+  incluiChopp: boolean;
+  chopps: ChoppItem[];
 }
 
 function V({ value, fallback }: { value: string; fallback: string }) {
@@ -22,7 +30,22 @@ function V({ value, fallback }: { value: string; fallback: string }) {
   return <span className="field-value">{value}</span>;
 }
 
+function parseValue(v: string): number {
+  if (!v) return 0;
+  return parseFloat(v.replace(/\./g, "").replace(",", ".")) || 0;
+}
+
+function formatBRL(n: number): string {
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export default function ContractTemplate({ data }: { data: ContractData }) {
+  const valorEspaco = parseValue(data.valor);
+  const valorChopp = data.incluiChopp
+    ? data.chopps.reduce((sum, c) => sum + parseValue(c.valor), 0)
+    : 0;
+  const valorTotal = valorEspaco + valorChopp;
+
   return (
     <div className="contract-preview" id="contract-content">
       <h1>CONTRATO DE LOCAÇÃO DE ESPAÇO PARA EVENTOS</h1>
@@ -64,11 +87,20 @@ export default function ContractTemplate({ data }: { data: ContractData }) {
         O presente contrato tem por objeto a locação do espaço físico denominado{" "}
         <strong>Espaço Magnific</strong>, exclusivamente para realização de
         evento privado do CONTRATANTE, na data e condições estabelecidas neste
-        instrumento.
+        instrumento
+        {data.incluiChopp && data.chopps.length > 0 && (
+          <>, incluindo o fornecimento de chopp artesanal pela{" "}
+          <strong>SleutjesBeer</strong>, conforme especificado na cláusula 5</>
+        )}
+        .
       </p>
       <p>
-        Parágrafo único. A locação refere-se exclusivamente ao espaço físico,
-        não incluindo serviços de buffet, sonorização, iluminação ou qualquer
+        Parágrafo único. A locação refere-se exclusivamente ao espaço físico
+        {data.incluiChopp
+          ? <> e ao fornecimento de chopp descrito neste contrato</>
+          : null
+        }
+        , não incluindo serviços de buffet, sonorização, iluminação ou qualquer
         outro serviço não expressamente previsto neste contrato.
       </p>
 
@@ -124,9 +156,38 @@ export default function ContractTemplate({ data }: { data: ContractData }) {
       <hr className="divider" />
 
       <h2>5. DO VALOR E PAGAMENTO</h2>
-      <p>
-        Valor total: <strong>R$ <V value={data.valor} fallback="VALOR" /></strong>
-      </p>
+
+      {data.incluiChopp && data.chopps.length > 0 ? (
+        <>
+          <p>O valor total do presente contrato é composto por:</p>
+          <p>
+            <strong>a) Locação do espaço:</strong> R${" "}
+            <V value={data.valor} fallback="VALOR" />
+          </p>
+          <p>
+            <strong>b) Fornecimento de Chopp Artesanal — SleutjesBeer:</strong>
+          </p>
+          <ul>
+            {data.chopps.map((c, i) => (
+              <li key={i}>
+                <V value={c.sabor} fallback="SABOR" /> —{" "}
+                <V value={c.quantidade} fallback="QTD" /> litros — R${" "}
+                <V value={c.valor} fallback="VALOR" />
+              </li>
+            ))}
+          </ul>
+          <p>
+            <strong>
+              Valor total (Espaço + Chopp): R$ {formatBRL(valorTotal)}
+            </strong>
+          </p>
+        </>
+      ) : (
+        <p>
+          Valor total: <strong>R$ <V value={data.valor} fallback="VALOR" /></strong>
+        </p>
+      )}
+
       <p>Forma de pagamento:</p>
       <ul>
         <li>
@@ -144,6 +205,22 @@ export default function ContractTemplate({ data }: { data: ContractData }) {
         §2º São aceitas as formas de pagamento: Pix, cartão e parcelamento,
         conforme condições comerciais vigentes.
       </p>
+
+      {data.incluiChopp && data.chopps.length > 0 && (
+        <>
+          <p>
+            §3º O fornecimento de chopp artesanal será realizado pela{" "}
+            <strong>SleutjesBeer</strong>, marca pertencente ao CONTRATADO,
+            incluindo a disponibilização de chopeira(s) e acessórios necessários
+            para o serviço durante o evento.
+          </p>
+          <p>
+            §4º A quantidade de chopp contratada é estimada. Eventuais
+            acréscimos durante o evento serão cobrados separadamente, conforme
+            tabela de preços vigente.
+          </p>
+        </>
+      )}
 
       <hr className="divider" />
 

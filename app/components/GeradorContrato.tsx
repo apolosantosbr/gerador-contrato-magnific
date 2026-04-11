@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import ContractTemplate, { type ContractData } from "./ContractTemplate";
+import ContractTemplate, { type ContractData, type ChoppItem } from "./ContractTemplate";
+
+const EMPTY_CHOPP: ChoppItem = { sabor: "", quantidade: "", valor: "" };
 
 const INITIAL_DATA: ContractData = {
   nomeCompleto: "",
@@ -16,6 +18,8 @@ const INITIAL_DATA: ContractData = {
   horarioInicio: "",
   valor: "",
   dataContrato: new Date().toLocaleDateString("pt-BR"),
+  incluiChopp: false,
+  chopps: [{ ...EMPTY_CHOPP }],
 };
 
 function maskCPF(value: string): string {
@@ -110,7 +114,7 @@ const FIELDS: {
   },
   {
     key: "valor",
-    label: "Valor Total (R$)",
+    label: "Valor do Espaço (R$)",
     placeholder: "3.000,00",
     mask: maskCurrency,
     half: true,
@@ -131,8 +135,11 @@ export default function GeradorContrato() {
   const [generating, setGenerating] = useState(false);
   const contractRef = useRef<HTMLDivElement>(null);
 
-  const filledCount = Object.values(data).filter((v) => v.trim()).length;
-  const totalFields = Object.keys(data).length;
+  const stringFields = Object.entries(data).filter(
+    ([k, v]) => typeof v === "string" && k !== "incluiChopp"
+  );
+  const filledCount = stringFields.filter(([, v]) => (v as string).trim()).length;
+  const totalFields = stringFields.length;
   const progress = Math.round((filledCount / totalFields) * 100);
 
   const handleChange = useCallback(
@@ -148,9 +155,45 @@ export default function GeradorContrato() {
   }, []);
 
   const handleClear = useCallback(() => {
-    setData(INITIAL_DATA);
+    setData({ ...INITIAL_DATA, chopps: [{ ...EMPTY_CHOPP }] });
     showToast("Formulário limpo");
   }, [showToast]);
+
+  const toggleChopp = useCallback(() => {
+    setData((prev) => ({ ...prev, incluiChopp: !prev.incluiChopp }));
+  }, []);
+
+  const addChopp = useCallback(() => {
+    setData((prev) => ({ ...prev, chopps: [...prev.chopps, { ...EMPTY_CHOPP }] }));
+  }, []);
+
+  const removeChopp = useCallback((index: number) => {
+    setData((prev) => ({
+      ...prev,
+      chopps: prev.chopps.filter((_, i) => i !== index),
+    }));
+  }, []);
+
+  const updateChopp = useCallback(
+    (index: number, field: keyof ChoppItem, value: string) => {
+      setData((prev) => ({
+        ...prev,
+        chopps: prev.chopps.map((c, i) =>
+          i === index
+            ? { ...c, [field]: field === "valor" ? maskCurrency(value) : value }
+            : c
+        ),
+      }));
+    },
+    []
+  );
+
+  const choppTotal = data.chopps.reduce((sum, c) => {
+    const v = parseFloat(c.valor.replace(/\./g, "").replace(",", ".")) || 0;
+    return sum + v;
+  }, 0);
+  const espacoTotal = parseFloat(data.valor.replace(/\./g, "").replace(",", ".")) || 0;
+  const valorFinal = espacoTotal + (data.incluiChopp ? choppTotal : 0);
 
   const handleExportPDF = useCallback(async () => {
     if (!contractRef.current) return;
@@ -361,6 +404,142 @@ export default function GeradorContrato() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Section: SleutjesBeer Chopp */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2
+                className="text-xs font-bold uppercase tracking-widest flex items-center gap-2"
+                style={{ color: "var(--accent)" }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
+                  <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
+                  <line x1="6" y1="2" x2="6" y2="4" />
+                  <line x1="10" y1="2" x2="10" y2="4" />
+                  <line x1="14" y1="2" x2="14" y2="4" />
+                </svg>
+                SleutjesBeer — Chopp
+              </h2>
+              <button
+                onClick={toggleChopp}
+                className="relative w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer"
+                style={{
+                  background: data.incluiChopp ? "var(--accent)" : "var(--bg-tertiary)",
+                }}
+              >
+                <div
+                  className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200"
+                  style={{
+                    transform: data.incluiChopp ? "translateX(22px)" : "translateX(2px)",
+                  }}
+                />
+              </button>
+            </div>
+
+            {data.incluiChopp && (
+              <div className="fade-in">
+                <div
+                  className="rounded-lg p-3 mb-3 text-xs"
+                  style={{ background: "rgba(201, 168, 76, 0.1)", border: "1px solid rgba(201, 168, 76, 0.2)", color: "var(--accent-light)" }}
+                >
+                  Inclua os chopps da SleutjesBeer. O valor será somado ao do espaço no contrato.
+                </div>
+
+                {data.chopps.map((chopp, index) => (
+                  <div
+                    key={index}
+                    className="rounded-lg p-3 mb-3"
+                    style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
+                        Chopp {index + 1}
+                      </span>
+                      {data.chopps.length > 1 && (
+                        <button
+                          onClick={() => removeChopp(index)}
+                          className="text-xs px-2 py-0.5 rounded cursor-pointer transition-colors"
+                          style={{ color: "var(--error)", background: "rgba(239,68,68,0.1)" }}
+                        >
+                          Remover
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <div className="flex-1 min-w-[120px]">
+                        <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
+                          Sabor
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ex: Pilsen, IPA..."
+                          value={chopp.sabor}
+                          onChange={(e) => updateChopp(index, "sabor", e.target.value)}
+                        />
+                      </div>
+                      <div className="w-20">
+                        <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
+                          Litros
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="30"
+                          value={chopp.quantidade}
+                          onChange={(e) => updateChopp(index, "quantidade", e.target.value)}
+                        />
+                      </div>
+                      <div className="w-28">
+                        <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
+                          Valor (R$)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="600,00"
+                          value={chopp.valor}
+                          onChange={(e) => updateChopp(index, "valor", e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  onClick={addChopp}
+                  className="w-full py-2 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+                  style={{
+                    background: "var(--bg-secondary)",
+                    border: "1px dashed var(--border)",
+                    color: "var(--accent)",
+                  }}
+                >
+                  + Adicionar outro sabor
+                </button>
+
+                {/* Resumo de valores */}
+                <div
+                  className="mt-3 rounded-lg p-3 text-sm"
+                  style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+                >
+                  <div className="flex justify-between mb-1">
+                    <span style={{ color: "var(--text-secondary)" }}>Espaço</span>
+                    <span>R$ {data.valor || "0,00"}</span>
+                  </div>
+                  <div className="flex justify-between mb-1">
+                    <span style={{ color: "var(--text-secondary)" }}>Chopp</span>
+                    <span>R$ {choppTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div
+                    className="flex justify-between pt-2 mt-2 font-bold"
+                    style={{ borderTop: "1px solid var(--border)", color: "var(--accent)" }}
+                  >
+                    <span>Total</span>
+                    <span>R$ {valorFinal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Actions */}
