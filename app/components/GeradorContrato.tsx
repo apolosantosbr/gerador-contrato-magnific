@@ -50,13 +50,6 @@ function maskCurrency(value: string): string {
   });
 }
 
-function maskDate(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 8);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-}
-
 type StringKeys = Exclude<keyof ContractData, "incluiChopp" | "chopps">;
 
 const FIELDS: {
@@ -138,6 +131,43 @@ const FIELDS: {
   },
 ];
 
+/* #7 — PDF button component reutilizável */
+function PdfButton({
+  generating,
+  onClick,
+  className = "",
+}: {
+  generating: boolean;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      className={`btn-primary btn-glow justify-center ${className}`}
+      onClick={onClick}
+      disabled={generating}
+    >
+      {generating ? (
+        <>
+          <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+          </svg>
+          Gerando...
+        </>
+      ) : (
+        <>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          Baixar PDF
+        </>
+      )}
+    </button>
+  );
+}
+
 export default function GeradorContrato() {
   const [data, setData] = useState<ContractData>(INITIAL_DATA);
   const [activeTab, setActiveTab] = useState<"form" | "preview">("form");
@@ -145,12 +175,20 @@ export default function GeradorContrato() {
   const [generating, setGenerating] = useState(false);
   const contractRef = useRef<HTMLDivElement>(null);
 
+  /* #7 — Progress inclui campos do chopp quando ativo */
   const stringFields = Object.entries(data).filter(
-    ([k, v]) => typeof v === "string" && k !== "incluiChopp"
+    ([k]) => typeof data[k as keyof ContractData] === "string" && k !== "incluiChopp"
   );
   const filledCount = stringFields.filter(([, v]) => (v as string).trim()).length;
-  const totalFields = stringFields.length;
-  const progress = Math.round((filledCount / totalFields) * 100);
+  const choppFieldCount = data.incluiChopp ? data.chopps.length * 3 : 0;
+  const choppFilledCount = data.incluiChopp
+    ? data.chopps.reduce(
+        (sum, c) => sum + (c.sabor ? 1 : 0) + (c.quantidade ? 1 : 0) + (c.valor ? 1 : 0),
+        0
+      )
+    : 0;
+  const totalFields = stringFields.length + choppFieldCount;
+  const progress = Math.round(((filledCount + choppFilledCount) / totalFields) * 100);
 
   const calcEndTime = useCallback((startTime: string): string => {
     if (!startTime) return "";
@@ -177,9 +215,12 @@ export default function GeradorContrato() {
     setTimeout(() => setToast(""), 3000);
   }, []);
 
+  /* #8 — Confirmação antes de limpar */
   const handleClear = useCallback(() => {
-    setData({ ...INITIAL_DATA, chopps: [{ ...EMPTY_CHOPP }] });
-    showToast("Formulário limpo");
+    if (window.confirm("Tem certeza que deseja limpar todos os campos?")) {
+      setData({ ...INITIAL_DATA, chopps: [{ ...EMPTY_CHOPP }] });
+      showToast("Formulário limpo");
+    }
   }, [showToast]);
 
   const toggleChopp = useCallback(() => {
@@ -278,7 +319,7 @@ export default function GeradorContrato() {
                   background: progress === 100 ? "var(--success)" : "var(--accent)",
                 }}
               />
-              {filledCount}/{totalFields} campos
+              {filledCount + choppFilledCount}/{totalFields} campos
             </div>
           </div>
         </div>
@@ -315,7 +356,7 @@ export default function GeradorContrato() {
       <div className="flex-1 flex flex-col lg:flex-row max-w-7xl mx-auto w-full">
         {/* Form Panel */}
         <div
-          className={`w-full lg:w-[420px] lg:min-w-[420px] lg:overflow-y-auto p-4 sm:p-6 lg:border-r panel-scroll ${activeTab === "form" ? "block" : "hidden lg:block"}`}
+          className={`w-full lg:w-[420px] lg:min-w-[420px] lg:overflow-y-auto p-4 sm:p-6 lg:border-r panel-scroll mobile-pad-bottom ${activeTab === "form" ? "block" : "hidden lg:block"}`}
           style={{
             borderColor: "var(--border)",
             background: "var(--bg-primary)",
@@ -348,11 +389,11 @@ export default function GeradorContrato() {
             </div>
           </div>
 
-          {/* Section: Dados do Contratante */}
-          <div className="mb-6">
+          {/* #6 — Section: Dados do Contratante com separador e label maior */}
+          <div className="mb-8">
             <h2
-              className="text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2"
-              style={{ color: "var(--accent)" }}
+              className="text-sm font-bold uppercase tracking-wider mb-4 pb-3 flex items-center gap-2"
+              style={{ color: "var(--accent)", borderBottom: "1px solid var(--border)" }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -362,9 +403,11 @@ export default function GeradorContrato() {
             </h2>
             <div className="flex flex-wrap gap-3">
               {FIELDS.slice(0, 8).map((f) => (
-                <div key={f.key} className={f.half ? "w-[calc(50%-6px)]" : "w-full"}>
+                /* #5 — Mobile single-column */
+                <div key={f.key} className={f.half ? "w-full sm:w-[calc(50%-6px)]" : "w-full"}>
+                  {/* #1 — Label maior (text-sm) */}
                   <label
-                    className="block text-xs font-medium mb-1.5"
+                    className="block text-sm font-medium mb-2"
                     style={{ color: "var(--text-secondary)" }}
                   >
                     {f.label}
@@ -394,11 +437,11 @@ export default function GeradorContrato() {
             </div>
           </div>
 
-          {/* Section: Dados do Evento */}
-          <div className="mb-6">
+          {/* #6 — Section: Dados do Evento com separador */}
+          <div className="mb-8">
             <h2
-              className="text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2"
-              style={{ color: "var(--accent)" }}
+              className="text-sm font-bold uppercase tracking-wider mb-4 pb-3 flex items-center gap-2"
+              style={{ color: "var(--accent)", borderBottom: "1px solid var(--border)" }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -410,9 +453,9 @@ export default function GeradorContrato() {
             </h2>
             <div className="flex flex-wrap gap-3">
               {FIELDS.slice(8).map((f) => (
-                <div key={f.key} className={f.half ? "w-[calc(50%-6px)]" : "w-full"}>
+                <div key={f.key} className={f.half ? "w-full sm:w-[calc(50%-6px)]" : "w-full"}>
                   <label
-                    className="block text-xs font-medium mb-1.5"
+                    className="block text-sm font-medium mb-2"
                     style={{ color: "var(--text-secondary)" }}
                   >
                     {f.label}
@@ -428,11 +471,14 @@ export default function GeradorContrato() {
             </div>
           </div>
 
-          {/* Section: SleutjesBeer Chopp */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-4">
+          {/* #6 — Section: SleutjesBeer Chopp com separador */}
+          <div className="mb-8">
+            <div
+              className="flex items-center justify-between mb-4 pb-3"
+              style={{ borderBottom: "1px solid var(--border)" }}
+            >
               <h2
-                className="text-xs font-bold uppercase tracking-widest flex items-center gap-2"
+                className="text-sm font-bold uppercase tracking-wider flex items-center gap-2"
                 style={{ color: "var(--accent)" }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -444,8 +490,12 @@ export default function GeradorContrato() {
                 </svg>
                 SleutjesBeer — Chopp
               </h2>
+              {/* #2 — Toggle acessível */}
               <button
                 onClick={toggleChopp}
+                role="switch"
+                aria-checked={data.incluiChopp}
+                aria-label="Incluir chopp SleutjesBeer no contrato"
                 className="relative w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer"
                 style={{
                   background: data.incluiChopp ? "var(--accent)" : "var(--bg-tertiary)",
@@ -564,42 +614,20 @@ export default function GeradorContrato() {
             )}
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-3 mt-4">
-            <button
-              className="btn-primary flex-1 justify-center pulse-gold"
-              onClick={handleExportPDF}
-              disabled={generating}
-            >
-              {generating ? (
-                <>
-                  <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                  </svg>
-                  Gerando...
-                </>
-              ) : (
-                <>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
-                  Baixar PDF
-                </>
-              )}
-            </button>
+          {/* Actions — desktop only */}
+          <div className="hidden lg:flex gap-3 mt-4">
+            <PdfButton generating={generating} onClick={handleExportPDF} className="flex-1" />
             <button className="btn-secondary" onClick={handleClear}>
               Limpar
             </button>
           </div>
         </div>
 
-        {/* Preview Panel */}
+        {/* Preview Panel — #9 background suavizado */}
         <div
-          className={`flex-1 lg:overflow-y-auto panel-scroll ${activeTab === "preview" ? "block" : "hidden lg:block"}`}
+          className={`flex-1 lg:overflow-y-auto panel-scroll mobile-pad-bottom ${activeTab === "preview" ? "block" : "hidden lg:block"}`}
           style={{
-            background: "#e2e8f0",
+            background: "#cbd5e1",
           }}
         >
           <div className="p-3 sm:p-6 lg:p-8">
@@ -613,6 +641,14 @@ export default function GeradorContrato() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* #4 — Mobile sticky bottom bar */}
+      <div className="mobile-sticky-actions">
+        <PdfButton generating={generating} onClick={handleExportPDF} className="flex-1" />
+        <button className="btn-secondary" onClick={handleClear}>
+          Limpar
+        </button>
       </div>
 
       {/* Toast */}
