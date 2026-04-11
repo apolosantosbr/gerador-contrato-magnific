@@ -248,7 +248,7 @@ export default function GeradorContrato() {
           </div>
           <div className="flex items-center gap-3">
             <div
-              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium"
               style={{ background: "var(--bg-tertiary)", color: "var(--text-secondary)" }}
             >
               <div
@@ -265,7 +265,7 @@ export default function GeradorContrato() {
 
       {/* Mobile tabs */}
       <div
-        className="flex sm:hidden border-b"
+        className="flex lg:hidden border-b"
         style={{ borderColor: "var(--border)", background: "var(--bg-secondary)" }}
       >
         <button
@@ -291,14 +291,13 @@ export default function GeradorContrato() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col sm:flex-row max-w-7xl mx-auto w-full">
+      <div className="flex-1 flex flex-col lg:flex-row max-w-7xl mx-auto w-full">
         {/* Form Panel */}
         <div
-          className={`w-full sm:w-[420px] sm:min-w-[420px] overflow-y-auto p-4 sm:p-6 sm:border-r ${activeTab === "form" ? "block" : "hidden sm:block"}`}
+          className={`w-full lg:w-[420px] lg:min-w-[420px] lg:overflow-y-auto p-4 sm:p-6 lg:border-r panel-scroll ${activeTab === "form" ? "block" : "hidden lg:block"}`}
           style={{
             borderColor: "var(--border)",
             background: "var(--bg-primary)",
-            maxHeight: "calc(100vh - 65px)",
           }}
         >
           {/* Progress bar */}
@@ -577,13 +576,12 @@ export default function GeradorContrato() {
 
         {/* Preview Panel */}
         <div
-          className={`flex-1 overflow-y-auto ${activeTab === "preview" ? "block" : "hidden sm:block"}`}
+          className={`flex-1 lg:overflow-y-auto panel-scroll ${activeTab === "preview" ? "block" : "hidden lg:block"}`}
           style={{
             background: "#e2e8f0",
-            maxHeight: "calc(100vh - 65px)",
           }}
         >
-          <div className="p-4 sm:p-8">
+          <div className="p-3 sm:p-6 lg:p-8">
             <div
               className="rounded-lg overflow-hidden shadow-2xl"
               style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}
