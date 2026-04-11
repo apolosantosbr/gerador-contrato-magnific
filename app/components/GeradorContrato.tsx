@@ -16,6 +16,7 @@ const INITIAL_DATA: ContractData = {
   telefone: "",
   dataEvento: "",
   horarioInicio: "",
+  horarioFim: "",
   valor: "",
   dataContrato: new Date().toISOString().split("T")[0],
   incluiChopp: false,
@@ -115,6 +116,13 @@ const FIELDS: {
     half: true,
   },
   {
+    key: "horarioFim",
+    label: "Horário de Término",
+    placeholder: "00:00",
+    type: "time",
+    half: true,
+  },
+  {
     key: "valor",
     label: "Valor do Espaço (R$)",
     placeholder: "3.000,00",
@@ -144,11 +152,24 @@ export default function GeradorContrato() {
   const totalFields = stringFields.length;
   const progress = Math.round((filledCount / totalFields) * 100);
 
+  const calcEndTime = useCallback((startTime: string): string => {
+    if (!startTime) return "";
+    const [h, m] = startTime.split(":").map(Number);
+    const endH = (h + 6) % 24;
+    return `${String(endH).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }, []);
+
   const handleChange = useCallback(
     (key: StringKeys, value: string, mask?: (v: string) => string) => {
-      setData((prev) => ({ ...prev, [key]: mask ? mask(value) : value }));
+      setData((prev) => {
+        const updated = { ...prev, [key]: mask ? mask(value) : value };
+        if (key === "horarioInicio") {
+          updated.horarioFim = calcEndTime(value);
+        }
+        return updated;
+      });
     },
-    []
+    [calcEndTime]
   );
 
   const showToast = useCallback((msg: string) => {

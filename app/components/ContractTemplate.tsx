@@ -17,6 +17,7 @@ export interface ContractData {
   telefone: string;
   dataEvento: string;
   horarioInicio: string;
+  horarioFim: string;
   valor: string;
   dataContrato: string;
   incluiChopp: boolean;
@@ -125,12 +126,14 @@ export default function ContractTemplate({ data }: { data: ContractData }) {
           <V value={data.horarioInicio} fallback="HORÁRIO INÍCIO" />
         </li>
         <li>
-          Duração: <strong>06 (seis) horas corridas</strong>
+          Horário de término:{" "}
+          <V value={data.horarioFim} fallback="HORÁRIO TÉRMINO" />
         </li>
       </ul>
       <p>
         §1º O evento deverá ser encerrado{" "}
-        <strong>impreterivelmente até às 00:00 (meia-noite)</strong>.
+        impreterivelmente até às{" "}
+        <strong><V value={data.horarioFim} fallback="HORÁRIO TÉRMINO" /></strong>.
       </p>
       <p>
         §2º O som em volume elevado é permitido apenas até{" "}
