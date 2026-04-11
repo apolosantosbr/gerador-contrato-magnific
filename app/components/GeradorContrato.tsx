@@ -17,7 +17,7 @@ const INITIAL_DATA: ContractData = {
   dataEvento: "",
   horarioInicio: "",
   valor: "",
-  dataContrato: new Date().toLocaleDateString("pt-BR"),
+  dataContrato: new Date().toISOString().split("T")[0],
   incluiChopp: false,
   chopps: [{ ...EMPTY_CHOPP }],
 };
@@ -103,8 +103,8 @@ const FIELDS: {
   {
     key: "dataEvento",
     label: "Data do Evento",
-    placeholder: "15/06/2026",
-    mask: maskDate,
+    placeholder: "",
+    type: "date",
     half: true,
   },
   {
@@ -124,8 +124,8 @@ const FIELDS: {
   {
     key: "dataContrato",
     label: "Data do Contrato",
-    placeholder: "11/04/2026",
-    mask: maskDate,
+    placeholder: "",
+    type: "date",
     half: true,
   },
 ];

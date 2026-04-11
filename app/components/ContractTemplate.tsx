@@ -23,11 +23,20 @@ export interface ContractData {
   chopps: ChoppItem[];
 }
 
-function V({ value, fallback }: { value: string; fallback: string }) {
+function formatDateBR(value: string): string {
+  if (!value) return "";
+  // YYYY-MM-DD → DD/MM/YYYY
+  const parts = value.split("-");
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  return value;
+}
+
+function V({ value, fallback, isDate }: { value: string; fallback: string; isDate?: boolean }) {
   if (!value.trim()) {
     return <span className="field-empty">[{fallback}]</span>;
   }
-  return <span className="field-value">{value}</span>;
+  const display = isDate ? formatDateBR(value) : value;
+  return <span className="field-value">{display}</span>;
 }
 
 function parseValue(v: string): number {
@@ -109,7 +118,7 @@ export default function ContractTemplate({ data }: { data: ContractData }) {
       <h2>3. DA DATA, DURAÇÃO E HORÁRIO</h2>
       <ul>
         <li>
-          Data do evento: <V value={data.dataEvento} fallback="DATA DO EVENTO" />
+          Data do evento: <V value={data.dataEvento} fallback="DATA DO EVENTO" isDate />
         </li>
         <li>
           Horário de início:{" "}
@@ -381,7 +390,7 @@ export default function ContractTemplate({ data }: { data: ContractData }) {
         <p>
           <strong>
             Juiz de Fora/MG,{" "}
-            <V value={data.dataContrato} fallback="DATA" />
+            <V value={data.dataContrato} fallback="DATA" isDate />
           </strong>
         </p>
 
