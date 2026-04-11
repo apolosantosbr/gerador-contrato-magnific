@@ -56,8 +56,10 @@ function maskDate(value: string): string {
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 
+type StringKeys = Exclude<keyof ContractData, "incluiChopp" | "chopps">;
+
 const FIELDS: {
-  key: keyof ContractData;
+  key: StringKeys;
   label: string;
   placeholder: string;
   mask?: (v: string) => string;
@@ -143,7 +145,7 @@ export default function GeradorContrato() {
   const progress = Math.round((filledCount / totalFields) * 100);
 
   const handleChange = useCallback(
-    (key: keyof ContractData, value: string, mask?: (v: string) => string) => {
+    (key: StringKeys, value: string, mask?: (v: string) => string) => {
       setData((prev) => ({ ...prev, [key]: mask ? mask(value) : value }));
     },
     []
