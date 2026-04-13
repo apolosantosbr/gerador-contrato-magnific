@@ -282,28 +282,9 @@ export default function ContractTemplate({ data }: { data: ContractData }) {
 
       <hr className="divider" />
 
-      <h2>8. DAS CONDIÇÕES DE USO</h2>
-      <p>É permitido:</p>
-      <ul>
-        <li>Entrada de buffet externo</li>
-        <li>Entrada de bebidas</li>
-        <li>Contratação de DJ ou som próprio</li>
-        <li>Decoração, desde que não cause danos</li>
-      </ul>
-      <p>É expressamente proibido:</p>
-      <ul>
-        <li>Som alto após 22:00</li>
-        <li>Ultrapassar a capacidade máxima</li>
-        <li>
-          Fixar objetos com pregos, parafusos, fitas agressivas ou qualquer
-          material que danifique o espaço
-        </li>
-        <li>
-          Utilizar fogos de artifício, materiais inflamáveis ou explosivos
-        </li>
-        <li>Realizar atividades ilícitas</li>
-        <li>Utilizar o espaço para finalidade diversa da contratada</li>
-      </ul>
+      <li>
+  Entrada de chopeiras, barris ou contratação de fornecedores de chopp que não sejam da Sleutjes Beer
+</li>
 
       <hr className="divider" />
 
