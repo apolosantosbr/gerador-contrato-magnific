@@ -286,7 +286,11 @@ export default function ContractTemplate({ data }: { data: ContractData }) {
       <p>É permitido:</p>
       <ul>
         <li>Entrada de buffet externo</li>
-        <li>Entrada de bebidas</li>
+        <li>
+  Entrada de bebidas em geral é permitida. No entanto, o fornecimento de chopp
+  deverá ser realizado exclusivamente pela Sleutjes Beer, empresa proprietária
+  do espaço, sendo proibida a entrada de chopeiras, barris ou fornecedores externos.
+</li>
         <li>Contratação de DJ ou som próprio</li>
         <li>Decoração, desde que não cause danos</li>
       </ul>
